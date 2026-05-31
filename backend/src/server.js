@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
 import { connectDB } from "./lib/db.js";
@@ -23,12 +24,16 @@ const PORT = process.env.PORT || 3000;
 const _dirname = path.resolve();
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(_dirname, "frontend/dist")));
+// Serve frontend build if present (useful for monorepo deployments)
+const frontendDistPath = path.join(_dirname, "frontend/dist");
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
 
   app.get("*", (req, res) => {
-    res.sendFile(path.join(_dirname, "frontend/dist/index.html"));
+    res.sendFile(path.join(frontendDistPath, "index.html"));
   });
+} else {
+  console.warn(`Frontend build not found at ${frontendDistPath}. Skipping static serve.`);
 }
 // Start server with proper startup and error handling
 const startServer = async () => {
